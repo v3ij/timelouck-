@@ -98,4 +98,38 @@ router.get('/me', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/logs/notifications/:tenantId
+ * Retrieves all SMS notifications dispatched for a specific tenant, mapping recipient details.
+ */
+router.get('/notifications/:tenantId', async (req, res) => {
+    const { tenantId } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT n.id, n.message, n.created_at, n.is_read, u.full_name, u.phone_number
+            FROM notifications n
+            JOIN users u ON n.user_id = u.id
+            WHERE u.tenant_id = $1
+            ORDER BY n.created_at DESC
+            LIMIT 50
+        `, [tenantId]);
+
+        res.json({
+            status: 'success',
+            data: result.rows.map(row => ({
+                id: row.id,
+                message: row.message,
+                createdAt: row.created_at,
+                isRead: row.is_read,
+                fullName: row.full_name,
+                phoneNumber: row.phone_number || '0700000000',
+                costUgx: 50 // UGX 50 per local SMS
+            }))
+        });
+    } catch (error) {
+        console.error('Fetch tenant notifications error:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch notifications feed' });
+    }
+});
+
 module.exports = router;

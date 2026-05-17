@@ -1,22 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Wifi, WifiOff, DollarSign, Key, User, CheckCircle, XCircle } from 'lucide-react';
 import Sidebar from '../../components/Sidebar';
 import { showToast } from '../../components/GlobalToast';
+import { fetchTenantStats } from '../../services/api';
 
 const HotelDashboard = () => {
-    // HARDCODED HOTEL HARDWARE DATA
+    const HOTEL_TENANT_ID = 2; // Grand Kampala Suites
+
+    const [statsData, setStatsData] = useState({
+        totalRooms: 50,
+        activeLocks: 48,
+        inactiveLocks: 2,
+        dailyIncomeUgx: 1200000,
+        rooms: []
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const loadStats = async () => {
+            const res = await fetchTenantStats(HOTEL_TENANT_ID);
+            if (res && res.status === 'success') {
+                setStatsData(res.data);
+            }
+            setIsLoading(false);
+        };
+        loadStats();
+    }, []);
+
     const stats = [
-        { label: 'Total Rooms', value: '50', sub: 'Capacity', icon: Home, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Active Locks', value: '48', sub: 'Online & Secure', icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-        { label: 'Inactive Locks', value: '2', sub: 'Offline / Low Batt', icon: WifiOff, color: 'text-red-500', bg: 'bg-red-50' },
-        { label: "Today's Income", value: 'UGX 1.2M', sub: 'Daily Rent', icon: DollarSign, color: 'text-orange-500', bg: 'bg-orange-50' },
+        { label: 'Total Rooms', value: isLoading ? '...' : statsData.totalRooms, sub: 'Capacity', icon: Home, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { label: 'Active Locks', value: isLoading ? '...' : statsData.activeLocks, sub: 'Online & Secure', icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+        { label: 'Inactive Locks', value: isLoading ? '...' : statsData.inactiveLocks, sub: 'Offline / Low Batt', icon: WifiOff, color: 'text-red-500', bg: 'bg-red-50' },
+        { label: "Today's Income", value: isLoading ? '...' : `UGX ${statsData.dailyIncomeUgx.toLocaleString()}`, sub: 'Daily Rent', icon: DollarSign, color: 'text-orange-500', bg: 'bg-orange-50' },
     ];
 
-    const rooms = [
+    const rooms = statsData.rooms && statsData.rooms.length > 0 ? statsData.rooms : [
         { id: '101', guest: 'John Doe', status: 'Occupied', payment: 'Paid', lock: 'Online' },
         { id: '102', guest: 'Jane Smith', status: 'Occupied', payment: 'Pending', lock: 'Online' },
         { id: '103', guest: '-', status: 'Vacant', payment: '-', lock: 'Online' },
-        { id: '104', guest: 'Mike Johnson', status: 'Occupied', payment: 'Paid', lock: 'Offline' }, // Offline Alert
+        { id: '104', guest: 'Mike Johnson', status: 'Occupied', payment: 'Paid', lock: 'Offline' },
         { id: '105', guest: '-', status: 'Vacant', payment: '-', lock: 'Online' },
     ];
 

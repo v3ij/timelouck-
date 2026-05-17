@@ -1,0 +1,124 @@
+UI/UX Design Specification Document
+Project: TimeWallet System™ – Biometric Access, Time Billing & Tax-Ready Infrastructure
+1. Project Vision
+The TimeWallet System™ is a time-based digital access, billing, and accounting platform that combines biometric authentication, automatic billing, mobile money integration, and tax-ready reporting for businesses in Uganda and Africa.
+2. Core Design Principles
+- Simplicity first
+- Mobile money centered
+- Minimal user interaction
+- Real-time transparency
+- Low-friction onboarding
+- Offline resilience
+- Trust-focused design
+3. User Types
+1. Customers/Consumers
+2. Business Owners
+3. Administrators
+4. Government/Tax Reporting Users
+4. Customer Mobile App UX
+Main screens:
+- Wallet & Time Balance
+- Live Session Tracking
+- Payment History
+- Linked Accounts
+- Notifications
+
+UX Flow:
+Fingerprint → Session Starts → Live Cost Tracking → Auto Payment → Receipt
+5. Business Owner Dashboard
+Dashboard Features:
+- Daily Revenue
+- Active Sessions
+- Time Sold
+- Tax Estimate
+- Occupancy Monitoring
+- Device Health
+- User Management
+- Export Reports
+6. Government Tax Module
+Features:
+- VAT-ready reporting
+- Revenue visibility
+- Digital audit logs
+- Exportable URA-compatible summaries
+- Business compliance score
+7. UI Design System
+Colors:
+- Green = Active/Revenue
+- Red = Errors/Denied
+- White = Background
+- Dark Blue = Admin
+
+Typography:
+- Large numeric displays
+- Simple labels
+- High readability
+8. Biometric Access UX
+User Journey:
+1. User approaches device
+2. Fingerprint/face scan
+3. System validates account
+4. Time session begins
+5. Live billing starts
+6. Session ends automatically or manually
+9. Time Billing Engine UX
+Features:
+- Per-minute billing
+- Dynamic pricing
+- Auto stop at spending limit
+- Low balance warnings
+- Live cost meter
+10. Mobile Money Integration
+Supported Systems:
+- MTN Mobile Money
+- Airtel Money
+- Bank APIs
+- Cards
+
+Flow:
+Link account → Approve auto deductions → Real-time charging
+11. Offline Mode UX
+The system continues operating during internet outages and synchronizes transactions when connectivity returns.
+12. Notifications System
+Examples:
+- Entry alerts
+- Session started
+- Low balance warnings
+- Payment confirmations
+- Tax report ready
+13. Security UX
+Security features:
+- Multi-factor authentication
+- Encrypted transactions
+- Session logs
+- Fraud alerts
+- Device verification
+14. Accessibility
+Design considerations:
+- Large buttons
+- Simple flows
+- Low literacy support
+- Multi-language support
+15. Future UX Expansion
+Potential future features:
+- TimeCoin economy
+- Smart city integration
+- Public transport access
+- Utility billing
+16. Recommended MVP UX
+Phase 1 should prioritize:
+- Customer app
+- Business dashboard
+- Live billing
+- Mobile money integration
+- Biometric access
+Sample User Journey
+1. User scans fingerprint
+2. Access granted
+3. Live timer starts
+4. Cost displayed in real time
+5. Payment deducted automatically
+6. Receipt sent via SMS/app
+7. Business and tax reports updated
+Conclusion
+The TimeWallet System™ is designed to simplify access, payments, accounting, and tax-ready reporting using a time-based digital economy model optimized for Uganda and African markets.

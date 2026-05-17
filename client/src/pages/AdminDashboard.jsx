@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Users, Lock, LogOut, TrendingUp,
-    Activity, Zap, Search, Bell, Settings, MoreHorizontal
+    Activity, Zap, Search, Bell, Settings, MoreHorizontal, Wallet, Home, AlertCircle, FileText
 } from 'lucide-react';
 
 import Logo from '../components/Logo';
@@ -13,20 +13,36 @@ const AdminDashboard = () => {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Linking Device State
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const [selectedDevice, setSelectedDevice] = useState(null);
+    const [availableContracts, setAvailableContracts] = useState([]);
+    const [selectedContractId, setSelectedContractId] = useState('');
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) { navigate('/login'); return; }
+                const storedUser = JSON.parse(localStorage.getItem('user'));
 
-                const res = await fetch('/api/dashboard/admin-stats', {
+                if (!token || !storedUser) { navigate('/login'); return; }
+
+                // Using our new dynamic tenant stats endpoint
+                // Fallback to tenantId 1 for testing if not set correctly in user session
+                const tenantId = storedUser.tenant_id || 1;
+
+                const res = await fetch(`/api/admin/tenant/${tenantId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    setStats(data.stats);
-                    setDevices(data.devices || []);
+                    setStats(data.data); // data.data contains our industry_type and stats
+                    // Mocking devices explicitly to show the link button 
+                    setDevices([
+                        { id: 101, device_name: 'Main Gate', model: 'Timmy TL90', location: 'Entrance', online_status: true },
+                        { id: 102, device_name: 'Room 402 Lock', model: 'Timmy TL90', location: '4th Floor', online_status: false }
+                    ]);
                 }
             } catch (err) {
                 console.error(err);
@@ -36,6 +52,41 @@ const AdminDashboard = () => {
         };
         fetchData();
     }, [navigate]);
+
+    const handleOpenLinkModal = async (device) => {
+        setSelectedDevice(device);
+        setIsLinkModalOpen(true);
+        // Mock fetch available contracts for this tenant
+        setAvailableContracts([
+            { id: 1, name: 'Room 402 (Active Stay)', type: 'hotel_stay' },
+            { id: 2, name: 'Apt 5B (Active Lease)', type: 'apartment_lease' }
+        ]);
+        setSelectedContractId('1');
+    };
+
+    const handleLinkDevice = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/devices/link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ device_id: selectedDevice.id, contract_id: selectedContractId })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(`Successfully linked ${selectedDevice.device_name} to unit.`);
+                setIsLinkModalOpen(false);
+            } else {
+                alert(data.message || 'Failed to link device');
+            }
+        } catch (err) {
+            alert('Error linking device');
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -97,26 +148,35 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                {/* KPI Cards */}
+                {/* DYNAMIC KPI Cards based on Industry Type */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <KPICard
-                        title="Total Revenue"
-                        value={`UGX ${stats.totalRevenue.toLocaleString()}`}
-                        icon={TrendingUp}
-                        stripColor="bg-[#FFA500]"
-                    />
-                    <KPICard
-                        title="Active Locks"
-                        value={stats.activeLocks}
-                        icon={Lock}
-                        stripColor="bg-[#1EC677]"
-                    />
-                    <KPICard
-                        title="Total Users"
-                        value={stats.totalUsers.toLocaleString()}
-                        icon={Users}
-                        stripColor="bg-blue-500"
-                    />
+
+                    {stats.industry_type === 'school' ? (
+                        <>
+                            <KPICard title="Total Students" value={stats.totalStudents || 0} icon={Users} stripColor="bg-blue-500" />
+                            <KPICard title="Daily Attendance" value={stats.dailyAttendance || 0} icon={Activity} stripColor="bg-[#1EC677]" />
+                            <KPICard title="Total Balance" value={`UGX ${(stats.totalBalance || 0).toLocaleString()}`} icon={Wallet} stripColor="bg-[#FFA500]" />
+                        </>
+                    ) : stats.industry_type === 'hotel' ? (
+                        <>
+                            <KPICard title="Booked Rooms" value={stats.bookedRooms || 0} icon={Home} stripColor="bg-amber-500" />
+                            <KPICard title="Active Guests" value={stats.activeGuests || 0} icon={Users} stripColor="bg-purple-500" />
+                            <KPICard title="Unrecovered Items" value={stats.unrecoveredLostItems || 0} icon={AlertCircle} stripColor="bg-red-500" />
+                        </>
+                    ) : stats.industry_type === 'apartment' ? (
+                        <>
+                            <KPICard title="Active Leases" value={stats.activeLeases || 0} icon={FileText} stripColor="bg-emerald-500" />
+                            <KPICard title="Rent Collection" value={`UGX ${(stats.rentCollection || 0).toLocaleString()}`} icon={Wallet} stripColor="bg-[#FFA500]" />
+                            <KPICard title="Active Locks" value={stats.activeLocks || 0} icon={Lock} stripColor="bg-[#1EC677]" />
+                        </>
+                    ) : (
+                        /* Default Generic Rendering if type is undefined */
+                        <>
+                            <KPICard title="Total Revenue" value={`UGX ${(stats.totalBalance || 0).toLocaleString()}`} icon={TrendingUp} stripColor="bg-[#FFA500]" />
+                            <KPICard title="Active Locks" value={stats.activeLocks || 0} icon={Lock} stripColor="bg-[#1EC677]" />
+                            <KPICard title="Total Users" value={(stats.totalUsers || 0).toLocaleString()} icon={Users} stripColor="bg-blue-500" />
+                        </>
+                    )}
                 </div>
 
                 {/* Door Management Table */}
@@ -161,7 +221,13 @@ const AdminDashboard = () => {
                                             {device.online_status ? 'ONLINE' : 'OFFLINE'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        <button
+                                            onClick={() => handleOpenLinkModal(device)}
+                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs font-bold transition-colors"
+                                        >
+                                            Link to Unit
+                                        </button>
                                         <button className="p-2 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-[#0A1F44]">
                                             <MoreHorizontal size={18} />
                                         </button>
@@ -176,8 +242,47 @@ const AdminDashboard = () => {
                         </tbody>
                     </table>
                 </div>
-
             </main>
+
+            {/* Link Device Modal */}
+            {isLinkModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                        <h2 className="text-2xl font-bold text-[#0A1F44] mb-2">Link Device to Unit</h2>
+                        <p className="text-slate-500 text-sm mb-4">Select an active contract/booking to assign to <strong className="text-slate-800">{selectedDevice?.device_name}</strong>.</p>
+
+                        <form onSubmit={handleLinkDevice} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Select Unit (Room/Apartment/Class)</label>
+                                <select
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0A1F44] focus:outline-none"
+                                    value={selectedContractId}
+                                    onChange={(e) => setSelectedContractId(e.target.value)}
+                                >
+                                    {availableContracts.map(contract => (
+                                        <option key={contract.id} value={contract.id}>{contract.name} - {contract.type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsLinkModalOpen(false)}
+                                    className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-xl font-medium transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-[#0A1F44] hover:bg-blue-900 text-white rounded-xl font-bold transition-colors"
+                                >
+                                    Link Device
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

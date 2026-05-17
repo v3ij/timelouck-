@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchTenantStats } from '../../../services/api';
+import { fetchTenantStats, fetchTenantNotifications } from '../../../services/api';
 
 // Reusable SVG Icons tailored for the Hotel/Micro-Leasing Dashboard
 const BuildingIcon = () => (
@@ -51,21 +51,29 @@ const PhoneIcon = () => (
 );
 
 const HotelDashboard = () => {
-    const HOTEL_TENANT_ID = 'd0000000-0000-0000-0000-000000000002'; // Seeded Grand Kampala Suites ID
+    const HOTEL_TENANT_ID = 2; // Seeded Grand Kampala Suites ID
 
     const [stats, setStats] = useState({
         totalUsers: 0,
         lowBalanceUsers: 0,
         activeLocks: 0,
-        dailyRentCollectedUgx: 0
+        inactiveLocks: 0,
+        dailyRentCollectedUgx: 0,
+        rooms: []
     });
+    const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadStats = async () => {
+            setIsLoading(true);
             const res = await fetchTenantStats(HOTEL_TENANT_ID);
             if (res && res.status === 'success') {
                 setStats(res.data);
+            }
+            const notifRes = await fetchTenantNotifications(HOTEL_TENANT_ID);
+            if (notifRes && notifRes.status === 'success') {
+                setNotifications(notifRes.data);
             }
             setIsLoading(false);
         };
@@ -197,103 +205,57 @@ const HotelDashboard = () => {
                     {/* Grid Container */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            {/* Healthy Room (Green) */}
-                            <div className="bg-white border-2 border-[#10B981]/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 text-[#10B981] pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-[#0A1F44]">Room 101</h4>
-                                    <span className="bg-[#10B981]/10 text-[#10B981] text-xs font-bold px-2 py-1 rounded border border-[#10B981]/20">Active</span>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-sm text-gray-800 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: John D.</span></p>
-                                    <p className="text-sm text-[#10B981] font-bold flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: 3 Days Left</span></p>
-                                    <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-gray-50"><LockIconMini /> <span className="ml-2">Lock: Online (98%)</span></p>
-                                </div>
-                            </div>
-
-                            {/* Warning Room (Orange) */}
-                            <div className="bg-white border-2 border-[#F59E0B]/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 text-[#F59E0B] pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-[#0A1F44]">Room 102</h4>
-                                    <span className="bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-bold px-2 py-1 rounded border border-[#F59E0B]/20">Warning</span>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-sm text-gray-800 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: Mary S.</span></p>
-                                    <p className="text-sm text-[#F59E0B] font-bold flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: 12 Hours Left</span></p>
-                                    <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-gray-50"><LockIconMini /> <span className="ml-2">Lock: Online (95%)</span></p>
-                                </div>
-                            </div>
-
-                            {/* Denied Room (Red) */}
-                            <div className="bg-red-50/50 border-2 border-[#EF4444]/40 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 text-[#EF4444] pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-[#0A1F44]">Room 105</h4>
-                                    <span className="bg-[#EF4444]/10 text-[#EF4444] text-xs font-bold px-2 py-1 rounded border border-[#EF4444]/20 animate-pulse">Locked</span>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-sm text-gray-800 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: Ali K.</span></p>
-                                    <p className="text-sm text-[#EF4444] font-bold flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: EMPTY (Access Denied)</span></p>
-                                    <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-red-100/50"><LockIconMini /> <span className="ml-2">Lock: Online (88%)</span></p>
-                                </div>
-                            </div>
-
-                            {/* Vacant Room (Gray) */}
-                            <div className="bg-gray-50/80 border-2 border-gray-200 border-dashed rounded-xl p-4 shadow-sm relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-3 opacity-5 text-gray-800 pointer-events-none">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-gray-600">Room 108</h4>
-                                    <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded border border-gray-300">Vacant</span>
-                                </div>
-                                <div className="space-y-2 opacity-60">
-                                    <p className="text-sm text-gray-500 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: None</span></p>
-                                    <p className="text-sm text-gray-500 font-medium flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: Inactive</span></p>
-                                    <p className="text-xs text-gray-400 font-medium flex items-center mt-2 pt-2 border-t border-gray-200"><LockIconMini /> <span className="ml-2">Lock: Online (100%)</span></p>
-                                </div>
-                            </div>
-
-                            {/* Healthy Room (Green) */}
-                            <div className="bg-white border-2 border-[#10B981]/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 text-[#10B981] pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-[#0A1F44]">Room 110</h4>
-                                    <span className="bg-[#10B981]/10 text-[#10B981] text-xs font-bold px-2 py-1 rounded border border-[#10B981]/20">Active</span>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-sm text-gray-800 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: Peter O.</span></p>
-                                    <p className="text-sm text-[#10B981] font-bold flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: 14 Days Left</span></p>
-                                    <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-gray-50"><LockIconMini /> <span className="ml-2">Lock: Online (92%)</span></p>
-                                </div>
-                            </div>
-
-                            {/* Healthy Room (Green) */}
-                            <div className="bg-white border-2 border-[#10B981]/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 text-[#10B981] pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
-                                    <LockIcon />
-                                </div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <h4 className="text-lg font-bold text-[#0A1F44]">Room 112</h4>
-                                    <span className="bg-[#10B981]/10 text-[#10B981] text-xs font-bold px-2 py-1 rounded border border-[#10B981]/20">Active</span>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-sm text-gray-800 font-medium flex items-center"><UsersIconMini /> <span className="ml-2">Guest: Simon M.</span></p>
-                                    <p className="text-sm text-[#10B981] font-bold flex items-center"><WalletCashIconMini /> <span className="ml-2">Wallet: 5 Days Left</span></p>
-                                    <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-gray-50"><LockIconMini /> <span className="ml-2">Lock: Online (99%)</span></p>
-                                </div>
-                            </div>
-
+                            {isLoading ? (
+                                <div className="col-span-2 text-center py-10 text-gray-500 font-medium">Loading rooms...</div>
+                            ) : stats.rooms && stats.rooms.length > 0 ? (
+                                stats.rooms.map((room) => (
+                                    <div 
+                                        key={room.id} 
+                                        className={`bg-white border-2 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${
+                                            room.status === 'Occupied' 
+                                                ? (room.payment === 'Paid' ? 'border-[#10B981]/20' : 'border-[#F59E0B]/30') 
+                                                : 'border-gray-200 border-dashed bg-gray-50/80'
+                                        }`}
+                                    >
+                                        <div className={`absolute top-0 right-0 p-3 opacity-10 pointer-events-none transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform ${
+                                            room.status === 'Occupied' 
+                                                ? (room.payment === 'Paid' ? 'text-[#10B981]' : 'text-[#F59E0B]') 
+                                                : 'text-gray-800'
+                                        }`}>
+                                            <LockIcon />
+                                        </div>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h4 className={`text-lg font-bold ${room.status === 'Occupied' ? 'text-[#0A1F44]' : 'text-gray-600'}`}>Room {room.id}</h4>
+                                            <span className={`text-xs font-bold px-2 py-1 rounded border ${
+                                                room.status === 'Occupied' 
+                                                    ? (room.payment === 'Paid' ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' : 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20') 
+                                                    : 'bg-gray-200 text-gray-600 border-gray-300'
+                                            }`}>
+                                                {room.status === 'Occupied' ? (room.payment === 'Paid' ? 'Active' : 'Warning') : 'Vacant'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className={`text-sm font-medium flex items-center ${room.status === 'Occupied' ? 'text-gray-800' : 'text-gray-500 opacity-60'}`}>
+                                                <UsersIconMini /> <span className="ml-2">Guest: {room.guest}</span>
+                                            </p>
+                                            <p className={`text-sm font-bold flex items-center ${
+                                                room.status === 'Occupied' 
+                                                    ? (room.payment === 'Paid' ? 'text-[#10B981]' : 'text-[#F59E0B]') 
+                                                    : 'text-gray-500 opacity-60'
+                                            }`}>
+                                                <WalletCashIconMini /> <span className="ml-2">
+                                                    {room.status === 'Occupied' ? (room.payment === 'Paid' ? 'Wallet: Active' : 'Wallet: Warning') : 'Wallet: Inactive'}
+                                                </span>
+                                            </p>
+                                            <p className="text-xs text-gray-500 font-medium flex items-center mt-2 pt-2 border-t border-gray-50">
+                                                <LockIconMini /> <span className="ml-2">Lock: {room.lock}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-2 text-center py-10 text-gray-500 font-medium">No rooms configured</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -315,76 +277,46 @@ const HotelDashboard = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3 z-10">
-                        {/* Feed Item 1: Auto Deduction */}
-                        <div className="bg-[#0f2347] border border-[#1e3a70] rounded-xl p-3 shadow-inner relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-                            <div className="flex justify-between items-start">
-                                <p className="text-xs font-mono text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded ml-1">08:00 AM</p>
-                                <span className="text-xs text-gray-400">System Auto</span>
-                            </div>
-                            <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
-                                <span className="text-white font-semibold">UGX 50,000</span> deducted from <span className="text-white font-semibold">Room 101</span> (Daily Rent).
-                            </p>
-                            <div className="mt-2 ml-1 text-xs text-[#10B981] font-medium flex items-center">
-                                <CheckCircleIconMini /> Success | Current Bal: UGX 150,000
-                            </div>
-                        </div>
-
-                        {/* Feed Item 2: Lock Disabled */}
-                        <div className="bg-[#0f2347] border border-[#ef4444]/30 rounded-xl p-3 shadow-inner relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#EF4444]"></div>
-                            <div className="flex justify-between items-start">
-                                <p className="text-xs font-mono text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded ml-1">07:30 AM</p>
-                                <span className="text-xs text-[#FFA500] font-medium border border-[#FFA500]/30 px-1.5 rounded">Action Taken</span>
-                            </div>
-                            <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
-                                <span className="text-white font-semibold">Room 105</span> Lock Disabled (<span className="text-red-300">Insufficient Funds</span>).
-                            </p>
-                            <div className="mt-2 ml-1 pt-2 border-t border-white/5 flex gap-2">
-                                <button className="text-xs bg-[#FFA500] text-[#0A1F44] font-bold px-3 py-1.5 rounded hover:bg-[#ffb732] transition-colors flex items-center">
-                                    <PhoneIcon /> <span className="ml-1">SMS Guest</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Feed Item 3: Top-up */}
-                        <div className="bg-[#0f2347] border border-[#FFA500]/30 rounded-xl p-3 shadow-inner relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFA500]"></div>
-                            <div className="flex justify-between items-start">
-                                <p className="text-xs font-mono text-[#FFA500] bg-[#FFA500]/10 px-2 py-0.5 rounded ml-1">06:15 AM</p>
-                                <span className="text-xs text-gray-400">Mobile Money API</span>
-                            </div>
-                            <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
-                                <span className="text-white font-semibold">Room 102</span> Wallet Top-up: <span className="text-[#FFA500] font-bold">UGX 150,000</span> via MTN Mobile Money.
-                            </p>
-                            <div className="mt-2 ml-1 text-xs text-gray-400 font-medium">
-                                TxID: MTN-8472910X
-                            </div>
-                        </div>
-
-                        {/* Feed Item 4: Auto Deduction */}
-                        <div className="bg-[#0f2347] border border-[#1e3a70] rounded-xl p-3 shadow-inner relative overflow-hidden opacity-80">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-                            <div className="flex justify-between items-start">
-                                <p className="text-xs font-mono text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded ml-1">00:01 AM</p>
-                                <span className="text-xs text-gray-400">System Auto</span>
-                            </div>
-                            <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
-                                <span className="text-white font-semibold">UGX 50,000</span> deducted from <span className="text-white font-semibold">Room 110</span> (Daily Rent).
-                            </p>
-                        </div>
-
-                        {/* Feed Item 5: Auto Deduction */}
-                        <div className="bg-[#0f2347] border border-[#1e3a70] rounded-xl p-3 shadow-inner relative overflow-hidden opacity-60">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-                            <div className="flex justify-between items-start">
-                                <p className="text-xs font-mono text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded ml-1">00:01 AM</p>
-                                <span className="text-xs text-gray-400">System Auto</span>
-                            </div>
-                            <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
-                                <span className="text-white font-semibold">UGX 50,000</span> deducted from <span className="text-white font-semibold">Room 112</span> (Daily Rent).
-                            </p>
-                        </div>
+                        {isLoading ? (
+                            <div className="text-center py-8 text-gray-400 font-medium">Syncing Time Wallet Engine logs...</div>
+                        ) : notifications.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 font-medium">No live Time Wallet billing actions recorded.</div>
+                        ) : (
+                            notifications.map((notif) => {
+                                const isInsufficient = notif.message.toLowerCase().includes('insufficient') || notif.message.toLowerCase().includes('restricted') || notif.message.toLowerCase().includes('low balance') || notif.message.toLowerCase().includes('alert');
+                                const isTopup = notif.message.toLowerCase().includes('topup') || notif.message.toLowerCase().includes('received') || notif.message.toLowerCase().includes('credited');
+                                
+                                return (
+                                    <div key={notif.id} className={`bg-[#0f2347] border rounded-xl p-3 shadow-inner relative overflow-hidden ${
+                                        isInsufficient ? 'border-[#ef4444]/30' : isTopup ? 'border-[#FFA500]/30' : 'border-[#1e3a70]'
+                                    }`}>
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                            isInsufficient ? 'bg-[#EF4444]' : isTopup ? 'bg-[#FFA500]' : 'bg-[#10B981]'
+                                        }`}></div>
+                                        <div className="flex justify-between items-start">
+                                            <p className={`text-xs font-mono px-2 py-0.5 rounded ml-1 ${
+                                                isInsufficient ? 'text-[#EF4444] bg-[#EF4444]/10' : isTopup ? 'text-[#FFA500] bg-[#FFA500]/10' : 'text-[#10B981] bg-[#10B981]/10'
+                                            }`}>
+                                                {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                            <span className="text-xs text-gray-400">
+                                                {isInsufficient ? 'Lock Controller' : isTopup ? 'Mobile Money API' : 'System Engine'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-300 mt-2 leading-relaxed ml-1">
+                                            <span className="text-white font-semibold">{notif.fullName || 'Guest'}</span>: {notif.message}
+                                        </p>
+                                        <div className="mt-2 ml-1 text-xs text-gray-400 font-medium flex items-center">
+                                            {isInsufficient ? (
+                                                <span className="text-[#EF4444] font-semibold flex items-center"><XCircleIconMini /> Restricting access...</span>
+                                            ) : (
+                                                <span className="text-[#10B981] font-semibold flex items-center"><CheckCircleIconMini /> Success</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
 
@@ -415,6 +347,12 @@ const LockIconMini = () => (
 const CheckCircleIconMini = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+    </svg>
+);
+
+const XCircleIconMini = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-[#EF4444]" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
     </svg>
 );
 

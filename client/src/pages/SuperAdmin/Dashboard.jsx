@@ -28,11 +28,16 @@ const SuperAdminDashboard = () => {
         totalTenants: 0,
         totalRevenue: 0,
         activeUsers: 0,
-        totalDevices: 0
+        totalDevices: 0,
+        industryStats: []
     });
     const [tenants, setTenants] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    // New Tenant Modal State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [newTenantData, setNewTenantData] = useState({ name: '', type: 'school' });
 
     useEffect(() => {
         const loadDashboard = async () => {
@@ -57,6 +62,28 @@ const SuperAdminDashboard = () => {
     const handleDownloadReport = () => {
         showToast('Generating Global Revenue Report PDF...');
         setTimeout(() => window.print(), 800);
+    };
+
+    const handleCreateTenant = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/admin/tenants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTenantData)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showToast(`Successfully created ${newTenantData.type}: ${newTenantData.name}`);
+                setTenants([data.data, ...tenants]);
+                setIsCreateModalOpen(false);
+                setNewTenantData({ name: '', type: 'school' });
+            } else {
+                showToast(data.message || 'Failed to create tenant');
+            }
+        } catch (err) {
+            showToast('Error creating tenant');
+        }
     };
 
     const filteredTenants = tenants.filter(t =>
@@ -142,6 +169,29 @@ const SuperAdminDashboard = () => {
                 </div>
             </div>
 
+            {/* Industry Breakdown (Dynamic) */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
+                <h3 className="text-xl font-bold text-[#0A1F44] mb-6">Industry Breakdown</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {stats.industryStats && stats.industryStats.length > 0 ? (
+                        stats.industryStats.map((ind, idx) => (
+                            <div key={idx} className="p-4 border border-gray-100 rounded-xl bg-gray-50 flex justify-between items-center">
+                                <div>
+                                    <p className="text-sm font-bold text-[#0A1F44] capitalize">{ind.type}</p>
+                                    <p className="text-xs text-gray-500">{ind.total_users} Users</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-[#1EC677]">UGX {parseFloat(ind.total_balance).toLocaleString()}</p>
+                                    <p className="text-xs text-gray-400">Total Holdings</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm">No industry data available yet.</p>
+                    )}
+                </div>
+            </div>
+
             {/* Revenue Growth Chart */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
                 <h3 className="text-xl font-bold text-[#0A1F44] mb-6">Monthly Revenue Growth (UGX)</h3>
@@ -170,13 +220,22 @@ const SuperAdminDashboard = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center sm:flex-row flex-col gap-4">
                     <h3 className="text-xl font-bold text-[#0A1F44]">Registered Networks (Tenants)</h3>
-                    <input
-                        type="text"
-                        placeholder="Search schools or hotels..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#0A1F44]/20"
-                    />
+
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <input
+                            type="text"
+                            placeholder="Search schools or hotels..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="px-4 py-2 border border-gray-200 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#0A1F44]/20"
+                        />
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="bg-[#1EC677] hover:bg-[#17a562] text-white px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap"
+                        >
+                            + Add Tenant
+                        </button>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[700px]">
@@ -235,6 +294,55 @@ const SuperAdminDashboard = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Create Tenant Modal */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                        <h2 className="text-2xl font-bold text-[#0A1F44] mb-4">Add New Tenant</h2>
+                        <form onSubmit={handleCreateTenant} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tenant Name (e.g. Oxford High)</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A1F44]"
+                                    value={newTenantData.name}
+                                    onChange={(e) => setNewTenantData({ ...newTenantData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Industry Type</label>
+                                <select
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#0A1F44] capitalize"
+                                    value={newTenantData.type}
+                                    onChange={(e) => setNewTenantData({ ...newTenantData, type: e.target.value })}
+                                >
+                                    <option value="school">School</option>
+                                    <option value="hotel">Hotel</option>
+                                    <option value="apartment">Apartment</option>
+                                    <option value="gym">Gym / Fitness</option>
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreateModalOpen(false)}
+                                    className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-[#0A1F44] text-white rounded-lg font-bold"
+                                >
+                                    Create Tenant
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

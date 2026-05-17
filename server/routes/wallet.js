@@ -8,11 +8,13 @@ const pool = require('../config/db');
  * Processes a top-up transaction from Mobile Money (MTN/Airtel).
  */
 router.post('/topup', async (req, res) => {
-    const { user_id, amount, reference_code } = req.body;
+    const { user_id, amount, reference_code, payment_method } = req.body;
 
     if (!user_id || !amount) {
         return res.status(400).json({ status: 'error', message: 'Missing required parameters.' });
     }
+
+    const p_method = payment_method || 'Mobile Money'; // Default if not specified
 
     const client = await pool.connect();
 
@@ -37,8 +39,8 @@ router.post('/topup', async (req, res) => {
 
         // 3. Record Transaction
         await client.query(
-            'INSERT INTO transactions (wallet_id, amount, transaction_type, reference_code) VALUES ($1, $2, $3, $4)',
-            [wallet.id, amount, 'topup', reference_code]
+            'INSERT INTO transactions (wallet_id, amount, transaction_type, reference_code, metadata) VALUES ($1, $2, $3, $4, $5::jsonb)',
+            [wallet.id, amount, 'topup', reference_code, JSON.stringify({ payment_method: p_method })]
         );
 
         await client.query('COMMIT');

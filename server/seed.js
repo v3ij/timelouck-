@@ -14,6 +14,9 @@ const seedDatabase = async () => {
         // 0. Initialize Schema (DROP THEN CREATE TO AVOID SCHEMA CONFLICTS)
         console.log('- Initializing Database Schema...');
         await client.query(`
+            DROP TABLE IF EXISTS attendance_and_reports CASCADE;
+            DROP TABLE IF EXISTS contracts_and_bookings CASCADE;
+            DROP TABLE IF EXISTS user_profiles CASCADE;
             DROP TABLE IF EXISTS transactions CASCADE;
             DROP TABLE IF EXISTS access_logs CASCADE;
             DROP TABLE IF EXISTS wallets CASCADE;
@@ -24,18 +27,20 @@ const seedDatabase = async () => {
             CREATE TABLE tenants (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                type VARCHAR(50) NOT NULL,
+                type VARCHAR(50) NOT NULL, -- e.g., 'school', 'hotel', 'apartment'
+                metadata JSONB DEFAULT '{}', -- Flexible data for specific industries
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                tenant_id INTEGER REFERENCES tenants(id),
+                tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 email VARCHAR(255),
                 role VARCHAR(50) DEFAULT 'user',
                 rfid_tag VARCHAR(100),
                 is_biometric_enrolled BOOLEAN DEFAULT false,
+                metadata JSONB DEFAULT '{}', -- Flexible data: Health conditions, Parent bank, Lost items
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -78,6 +83,47 @@ const seedDatabase = async () => {
                 amount NUMERIC(12,2) NOT NULL,
                 transaction_type VARCHAR(50) NOT NULL,
                 reference_code VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- -------------------------------------------------------------
+            -- DYNAMIC SCHEMA EXTENSION: Multi-Industry Support
+            -- -------------------------------------------------------------
+
+            CREATE TABLE IF NOT EXISTS user_profiles (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+                national_id VARCHAR(100),
+                passport_number VARCHAR(100),
+                address TEXT,
+                emergency_contact_name VARCHAR(255),
+                emergency_contact_phone VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS contracts_and_bookings (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+                contract_type VARCHAR(50) NOT NULL, -- 'hotel_stay', 'apartment_lease', 'school_term'
+                start_date TIMESTAMP NOT NULL,
+                end_date TIMESTAMP,
+                status VARCHAR(50) DEFAULT 'active', -- 'active', 'completed', 'cancelled'
+                amount_paid NUMERIC(12,2) DEFAULT 0,
+                days_weeks_paid INTEGER DEFAULT 0,
+                contract_file_url VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS attendance_and_reports (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+                report_date DATE NOT NULL,
+                status VARCHAR(50), -- 'present', 'absent', 'late'
+                performance_score NUMERIC(5,2), -- 0 - 100
+                daily_summary TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Fingerprint, History, Settings, Zap, ArrowDownLeft, ArrowUpRight, Plus, RefreshCw, Power, AlertCircle, Phone, CreditCard, Building, FileText, ScanFace, Nfc, BatteryFull, Wifi, QrCode } from 'lucide-react';
-import { fetchWalletBalance, triggerUnlock, fetchUserLogs } from '../../services/api';
+import { fetchWalletBalance, triggerUnlock, fetchUserLogs, startActiveSession, fetchActiveSession, stopActiveSession } from '../../services/api';
 import { showToast } from '../../components/GlobalToast';
 
 const UserHome = () => {
@@ -12,6 +12,8 @@ const UserHome = () => {
     const [showTopUp, setShowTopUp] = useState(false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [logs, setLogs] = useState([]);
+    const [activeSession, setActiveSession] = useState(null);
+    const [sessionSeconds, setSessionSeconds] = useState(0);
 
     useEffect(() => {
         // Mocking user profile and activity feed for MVP, since there isn't a dedicated endpoint yet
@@ -27,12 +29,25 @@ const UserHome = () => {
         }
     }, []);
 
+    const checkActiveSession = async (userId) => {
+        const res = await fetchActiveSession(userId);
+        if (res && res.status === 'active') {
+            setActiveSession(res.data);
+            setSessionSeconds(res.data.elapsed_seconds);
+        } else {
+            setActiveSession(null);
+        }
+    };
+
     const loadWallet = async (userId) => {
         setIsPolling(true);
         const data = await fetchWalletBalance(userId);
         if (data && data.status === 'success') {
-            setBalance({ balance: Number(data.wallet.balance_ugx), consumption_rate: 50 }); // Mocking consumption rate
+            setBalance({ balance: Number(data.wallet.balance_ugx), consumption_rate: 25 * 60 }); // UGX 25/min = 1500/hr
         }
+
+        // Check active session
+        await checkActiveSession(userId);
 
         // Also load logs
         const logsData = await fetchUserLogs(userId);
@@ -53,21 +68,38 @@ const UserHome = () => {
         }
     }, [user]);
 
+    useEffect(() => {
+        let interval;
+        if (activeSession) {
+            interval = setInterval(() => {
+                setSessionSeconds(prev => prev + 1);
+            }, 1000);
+        } else {
+            setSessionSeconds(0);
+        }
+        return () => clearInterval(interval);
+    }, [activeSession]);
+
     const handleUnlock = async () => {
-        if (isUnlocking || balance.balance <= 0) return;
+        if (isUnlocking || balance.balance <= 0) {
+            if (balance.balance <= 0) {
+                showToast('Insufficient balance. Please top up your wallet.');
+            }
+            return;
+        }
         setIsUnlocking(true);
         setUnlockStatus(null);
 
         try {
-            // Trigger actual API endpoint to simulate 5-second lock protocol
-            const response = await triggerUnlock('00:11:22:AA:BB:CC', 'MOCK_RFID_TAG'); // Use mocked device IDs
+            const response = await startActiveSession(user.id, 1);
 
-            if (response.status === 'success' || response.status === 'mock-success') {
+            if (response.status === 'success') {
                 setIsUnlocking(false);
                 setUnlockStatus('success');
-                // Refresh logs and wallet immediately after unlock
+                setActiveSession(response.data);
+                setSessionSeconds(0);
                 loadWallet(user.id);
-                // Revert success message after 3 seconds
+                showToast('Smart Lock Unlocked! Micro-leasing session started.');
                 setTimeout(() => setUnlockStatus(null), 3000);
             } else {
                 throw new Error(response.message || 'Unlock Failed');
@@ -75,7 +107,29 @@ const UserHome = () => {
         } catch (error) {
             setIsUnlocking(false);
             setUnlockStatus('error');
+            showToast(error.message || 'Lease session failed to start.');
             setTimeout(() => setUnlockStatus(null), 3000);
+        }
+    };
+
+    const handleEndSession = async () => {
+        if (!user || !user.id || isUnlocking) return;
+        setIsUnlocking(true);
+        try {
+            const response = await stopActiveSession(user.id);
+            if (response.status === 'success') {
+                setActiveSession(null);
+                setSessionSeconds(0);
+                loadWallet(user.id);
+                showToast(`Session stopped. Billed: UGX ${response.data.cost}`);
+            } else {
+                showToast(response.message || 'Failed to stop session.');
+            }
+        } catch (error) {
+            console.error('Error stopping session:', error);
+            showToast('Connection error stopping session.');
+        } finally {
+            setIsUnlocking(false);
         }
     };
 
@@ -263,27 +317,47 @@ const UserHome = () => {
                         {isUnlocking && <div className="absolute inset-0 bg-blue-500/5 animate-pulse"></div>}
                         {unlockStatus === 'success' && <div className="absolute inset-0 bg-emerald-500/5"></div>}
 
-                        <p className="text-white font-bold text-lg mb-1 z-10">Unlock via Wi-Fi/Bluetooth</p>
-                        <p className="text-xs text-slate-400 mb-8 z-10 font-medium">Works offline via RFID card</p>
+                        <p className="text-white font-bold text-lg mb-1 z-10">
+                            {activeSession ? 'Lease Session Active' : 'Unlock via Wi-Fi/Bluetooth'}
+                        </p>
+                        <p className="text-xs text-slate-400 mb-6 z-10 font-medium">
+                            {activeSession ? 'Ticking per-minute billing' : 'Works offline via RFID card'}
+                        </p>
+
+                        {activeSession && (
+                            <div className="mb-6 z-10 bg-[#071835]/80 px-4 py-3 rounded-2xl border border-emerald-500/20 text-center w-full max-w-[240px]">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Elapsed Duration</div>
+                                <div className="text-2xl font-black font-mono text-emerald-400 mt-0.5">
+                                    {Math.floor(sessionSeconds / 60).toString().padStart(2, '0')}:
+                                    {(sessionSeconds % 60).toString().padStart(2, '0')}
+                                </div>
+                                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-2">Lease Cost</div>
+                                <div className="text-lg font-bold text-white mt-0.5">
+                                    UGX {Math.max(25, Math.round((sessionSeconds / 60) * 25)).toLocaleString()}
+                                </div>
+                            </div>
+                        )}
 
                         <button
-                            onPointerDown={handleUnlock}
+                            onPointerDown={activeSession ? handleEndSession : handleUnlock}
                             disabled={isUnlocking}
                             className={`
                                 relative flex items-center justify-center w-36 h-36 rounded-full shadow-2xl z-10 transition-all duration-300
                                 ${isUnlocking
                                     ? 'bg-slate-700 scale-95 shadow-inner'
-                                    : unlockStatus === 'success'
-                                        ? 'bg-emerald-500 scale-100 shadow-emerald-500/50'
-                                        : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:scale-105 shadow-blue-500/40 active:scale-95'
+                                    : activeSession
+                                        ? 'bg-gradient-to-br from-red-500 to-orange-600 scale-100 shadow-red-500/40 hover:scale-105 active:scale-95'
+                                        : unlockStatus === 'success'
+                                            ? 'bg-emerald-500 scale-100 shadow-emerald-500/50'
+                                            : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:scale-105 shadow-blue-500/40 active:scale-95'
                                 }
                             `}
                         >
                             {/* Ripple Effect ring */}
-                            {isUnlocking && (
+                            {(isUnlocking || activeSession) && (
                                 <>
-                                    <div className="absolute inset-0 rounded-full border border-blue-400 animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                                    <div className="absolute inset-0 rounded-full border border-blue-400 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] delay-300"></div>
+                                    <div className={`absolute inset-0 rounded-full border ${activeSession ? 'border-red-400' : 'border-blue-400'} animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]`}></div>
+                                    <div className={`absolute inset-0 rounded-full border ${activeSession ? 'border-red-400' : 'border-blue-400'} animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] delay-300`}></div>
                                 </>
                             )}
 
@@ -293,15 +367,15 @@ const UserHome = () => {
                         <div className="mt-6 z-10 h-6">
                             {isUnlocking ? (
                                 <span className="text-blue-400 font-bold tracking-widest uppercase text-sm flex items-center gap-2">
-                                    <RefreshCw size={14} className="animate-spin" /> Unlocking...
+                                    <RefreshCw size={14} className="animate-spin" /> {activeSession ? 'Stopping...' : 'Unlocking...'}
                                 </span>
                             ) : unlockStatus === 'success' ? (
                                 <span className="text-emerald-400 font-bold tracking-widest uppercase text-sm">
-                                    Door Unlocked
+                                    {activeSession ? 'Active Session' : 'Door Unlocked'}
                                 </span>
                             ) : (
                                 <span className="text-slate-400 font-semibold tracking-widest uppercase text-sm">
-                                    Press to Unlock
+                                    {activeSession ? 'Hold to Lock & Stop' : 'Press to Unlock'}
                                 </span>
                             )}
                         </div>

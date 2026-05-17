@@ -14,6 +14,9 @@ const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
 const logsRoutes = require('./routes/logs'); // Unified Activity Feed
+const profileRoutes = require('./routes/profiles');
+const bookingRoutes = require('./routes/bookings');
+const accessRoutes = require('./routes/access');
 const { startEngine } = require('./cron/walletEngine');
 const pool = require('./config/db');
 
@@ -35,6 +38,9 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/access', accessRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
@@ -48,6 +54,9 @@ const startServer = async () => {
         await pool.query('SELECT NOW()');
         console.log('✅ Connected to Neon PostgreSQL database.');
 
+
+
+
         app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
 
@@ -60,6 +69,8 @@ const startServer = async () => {
     }
 };
 
-startServer();
+if (require.main === module) {
+    startServer();
+}
 
 module.exports = app;

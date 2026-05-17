@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchTenantStats } from '../../../services/api';
+import { fetchTenantStats, fetchTenantNotifications } from '../../../services/api';
 
 // Reusable SVG Icons tailored for the School Dashboard
 const UsersIcon = () => (
@@ -56,7 +56,7 @@ const ShieldExclamationIcon = () => (
 
 
 const SchoolDashboard = () => {
-    const SCHOOL_TENANT_ID = 'd0000000-0000-0000-0000-000000000001'; // Seeded Kampala High ID
+    const SCHOOL_TENANT_ID = 1; // Seeded Kampala High ID
 
     const [stats, setStats] = useState({
         totalUsers: 0,
@@ -64,13 +64,19 @@ const SchoolDashboard = () => {
         activeLocks: 0,
         dailyRentCollectedUgx: 0
     });
+    const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadStats = async () => {
+            setIsLoading(true);
             const res = await fetchTenantStats(SCHOOL_TENANT_ID);
             if (res && res.status === 'success') {
                 setStats(res.data);
+            }
+            const notifRes = await fetchTenantNotifications(SCHOOL_TENANT_ID);
+            if (notifRes && notifRes.status === 'success') {
+                setNotifications(notifRes.data);
             }
             setIsLoading(false);
         };
@@ -129,9 +135,9 @@ const SchoolDashboard = () => {
                     </div>
                     <div>
                         <p className="text-gray-500 text-sm font-medium mb-1">SMS Alerts Sent</p>
-                        <h2 className="text-3xl font-bold text-[#0A1F44] mb-2">1,150 <span className="text-base font-normal text-gray-400">Delivered</span></h2>
+                        <h2 className="text-3xl font-bold text-[#0A1F44] mb-2">{isLoading ? '...' : notifications.length} <span className="text-base font-normal text-gray-400">Delivered</span></h2>
                         <div className="flex items-center text-gray-500 text-sm font-medium bg-gray-50 py-1 px-3 rounded-md w-max border border-gray-100">
-                            <span>Cost: <strong className="text-[#0A1F44]">UGX 57,500</strong></span>
+                            <span>Cost: <strong className="text-[#0A1F44]">UGX {(notifications.length * 50).toLocaleString()}</strong></span>
                         </div>
                     </div>
                 </div>
@@ -195,76 +201,50 @@ const SchoolDashboard = () => {
 
                     {/* Feed Container */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gray-50/50">
-
-                        {/* Stream Item 1 - Granted */}
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-[#0A1F44]">AA</div>
-                                    <div>
-                                        <h4 className="text-base font-bold text-[#0A1F44]">Ahmed Ali <span className="font-normal text-sm text-gray-500 mx-1">|</span> <span className="text-sm font-medium text-gray-600">Grade 10</span></h4>
-                                        <p className="text-sm text-gray-500 mt-0.5">Main Gate Lock (TL90)</p>
+                        {isLoading ? (
+                            <div className="text-center py-8 text-gray-500 font-medium">Syncing notification stream...</div>
+                        ) : notifications.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 font-medium">No live access alerts yet. Try checking in or sending a reminder!</div>
+                        ) : (
+                            notifications.map((notif) => {
+                                const initials = notif.fullName ? notif.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SYS';
+                                const isInsufficient = notif.message.toLowerCase().includes('insufficient') || notif.message.toLowerCase().includes('restricted') || notif.message.toLowerCase().includes('low balance');
+                                
+                                return (
+                                    <div key={notif.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${isInsufficient ? 'bg-[#EF4444]' : 'bg-[#10B981]'}`}></div>
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-[#0A1F44]">
+                                                    {initials}
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-base font-bold text-[#0A1F44]">
+                                                        {notif.fullName || 'System Event'} 
+                                                        <span className="font-normal text-sm text-gray-500 mx-1">|</span> 
+                                                        <span className="text-sm font-medium text-gray-600">{notif.phoneNumber}</span>
+                                                    </h4>
+                                                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">{notif.message}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end">
+                                                <span className="text-xs font-mono font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                                                    {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                isInsufficient ? 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20' : 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20'
+                                            }`}>
+                                                {isInsufficient ? <XCircleIcon /> : <CheckCircleIcon />}
+                                                <span className="ml-1.5">{isInsufficient ? 'Access Restricted | SMS Sent' : 'Access Granted | SMS Sent'}</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <span className="text-xs font-mono font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">07:45 AM</span>
-                                </div>
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-gray-50 flex items-center">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">
-                                    <CheckCircleIcon /> <span className="ml-1.5">Granted & SMS Sent</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Stream Item 2 - Denied */}
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#EF4444]"></div>
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-[#0A1F44]">SJ</div>
-                                    <div>
-                                        <h4 className="text-base font-bold text-[#0A1F44]">Sarah John <span className="font-normal text-sm text-gray-500 mx-1">|</span> <span className="text-sm font-medium text-gray-600">Grade 11</span></h4>
-                                        <p className="text-sm text-gray-500 mt-0.5">Library Lock</p>
-                                    </div>
-                                </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <span className="text-xs font-mono font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">08:15 AM</span>
-                                </div>
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-gray-50 flex items-center">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20">
-                                    <XCircleIcon /> <span className="ml-1.5">Insufficient Funds</span>
-                                </span>
-                                <button className="ml-4 text-xs font-bold text-[#FFA500] hover:text-[#e69500] transition-colors underline-offset-2 hover:underline">
-                                    Send Reminder
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Stream Item 3 - Granted */}
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-[#0A1F44]">DO</div>
-                                    <div>
-                                        <h4 className="text-base font-bold text-[#0A1F44]">David Okello <span className="font-normal text-sm text-gray-500 mx-1">|</span> <span className="text-sm font-medium text-gray-600">Grade 12</span></h4>
-                                        <p className="text-sm text-gray-500 mt-0.5">Main Gate Lock (TL90)</p>
-                                    </div>
-                                </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <span className="text-xs font-mono font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">08:18 AM</span>
-                                </div>
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-gray-50 flex items-center">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">
-                                    <CheckCircleIcon /> <span className="ml-1.5">Granted & SMS Sent</span>
-                                </span>
-                            </div>
-                        </div>
-
+                                );
+                            })
+                        )}
                     </div>
                 </div>
 

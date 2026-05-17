@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 export const fetchWalletBalance = async (userId) => {
     try {
@@ -164,5 +164,102 @@ export const triggerGlobalTopup = async (amount) => {
     } catch (error) {
         console.error('Error triggering global topup:', error);
         return { status: 'error', message: 'Failed to trigger topup.' };
+    }
+};
+
+export const startActiveSession = async (userId, deviceId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sessions/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, deviceId }),
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error starting active session:', error);
+        return { status: 'error', message: 'Connection error starting session.' };
+    }
+};
+
+export const fetchActiveSession = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sessions/active/${userId}`);
+        if (!response.ok) throw new Error('Network error');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching active session:', error);
+        return null;
+    }
+};
+
+export const stopActiveSession = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sessions/stop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error stopping active session:', error);
+        return { status: 'error', message: 'Connection error stopping session.' };
+    }
+};
+
+export const fetchTaxRecords = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/tax-records`);
+        if (!response.ok) throw new Error('Network error');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching tax records:', error);
+        return null;
+    }
+};
+
+export const triggerRemoteOverride = async (deviceId, reason) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/hardware/override`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, reason }),
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error triggering remote override:', error);
+        return { status: 'error', message: 'Failed to dispatch remote override.' };
+    }
+};
+
+export const fetchDevices = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/devices`);
+        if (!response.ok) throw new Error('Network error');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching devices:', error);
+        return null;
+    }
+};
+
+export const fetchTenantUsers = async (tenantId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/tenant/${tenantId}/users`);
+        if (!response.ok) throw new Error('Network error');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching tenant users:', error);
+        return null;
+    }
+};
+
+export const fetchTenantNotifications = async (tenantId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/logs/notifications/${tenantId}`);
+        if (!response.ok) throw new Error('Network error');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching tenant notifications:', error);
+        return null;
     }
 };

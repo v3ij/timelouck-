@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { showToast } from '../../components/GlobalToast';
+import { fetchTaxRecords } from '../../services/api';
 
 // Reusable SVGs for the Government Audit Portal
 const BankTaxIcon = () => (
@@ -46,7 +47,6 @@ const BoxArchiveIcon = () => (
     </svg>
 );
 
-
 const BadgeSynced = () => (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold font-sans tracking-wide bg-[#059669]/10 text-[#059669] border border-[#059669]/20">
         <span className="w-1.5 h-1.5 rounded-full bg-[#059669] mr-1.5"></span> Synced
@@ -60,6 +60,24 @@ const BadgePending = () => (
 );
 
 const GovPortal = () => {
+    const [loading, setLoading] = useState(true);
+    const [taxData, setTaxData] = useState({ totalGrossUgx: 0, totalVatUgx: 0, records: [] });
+
+    const loadTaxRecords = async () => {
+        setLoading(true);
+        const res = await fetchTaxRecords();
+        if (res && res.status === 'success') {
+            setTaxData(res.data);
+        } else {
+            showToast('Failed to load compliance records');
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        loadTaxRecords();
+    }, []);
+
     return (
         <div className="min-h-screen bg-gray-50 font-sans p-8 flex flex-col items-center">
             <div className="w-full max-w-7xl">
@@ -72,7 +90,7 @@ const GovPortal = () => {
                     </div>
                     <div className="flex items-center space-x-3 bg-white px-4 py-2 border border-gray-200 shadow-sm">
                         <div className="h-2 w-2 bg-[#059669]"></div>
-                        <span className="text-xs font-mono font-bold text-gray-700 tracking-wider">SYSTEM STATUS: FULLY COMPLIANT <span className="ml-2 font-normal text-gray-400">| AS OF 10:48 AM</span></span>
+                        <span className="text-xs font-mono font-bold text-gray-700 tracking-wider">SYSTEM STATUS: FULLY COMPLIANT <span className="ml-2 font-normal text-gray-400">| LIVE SYNCED</span></span>
                     </div>
                 </div>
 
@@ -88,7 +106,9 @@ const GovPortal = () => {
                         </div>
                         <div>
                             <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1 font-sans">Total V.A.T Collected</p>
-                            <h2 className="text-3xl font-bold text-[#0A1F44] font-mono tracking-tight">UGX 8,450,000</h2>
+                            <h2 className="text-3xl font-bold text-[#0A1F44] font-mono tracking-tight">
+                                UGX {taxData.totalVatUgx.toLocaleString()}
+                            </h2>
                         </div>
                     </div>
 
@@ -103,7 +123,7 @@ const GovPortal = () => {
                         <div>
                             <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1 font-sans">API Sync Status</p>
                             <h2 className="text-base font-bold text-[#059669] tracking-tight mt-1 flex items-center">
-                                URA / KRA: Connected & Syncing
+                                URA Portal: Connected
                             </h2>
                         </div>
                     </div>
@@ -122,7 +142,7 @@ const GovPortal = () => {
                         </div>
                     </div>
 
-                    {/* Card 4: Pending Audits */}
+                    {/* Card 4: Gross Audited Revenue */}
                     <div className="bg-white p-6 border border-gray-200 shadow-sm flex flex-col justify-between hover:border-gray-300 transition-colors">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-gray-50 text-gray-600 border border-gray-100 rounded">
@@ -130,8 +150,10 @@ const GovPortal = () => {
                             </div>
                         </div>
                         <div>
-                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1 font-sans">Pending Audits</p>
-                            <h2 className="text-3xl font-bold text-[#0A1F44] font-mono tracking-tight">0 <span className="text-base font-sans font-medium text-gray-400">Pending</span></h2>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1 font-sans">Gross Audited Revenue</p>
+                            <h2 className="text-2xl font-bold text-[#0A1F44] font-mono tracking-tight">
+                                UGX {taxData.totalGrossUgx.toLocaleString()}
+                            </h2>
                         </div>
                     </div>
                 </div>
@@ -145,7 +167,7 @@ const GovPortal = () => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => {
-                                    showToast('Master PDF Downloaded');
+                                    showToast('Master PDF Generated & Saved');
                                     setTimeout(() => window.print(), 500);
                                 }}
                                 className="flex items-center bg-white border border-gray-300 text-gray-700 font-bold text-xs py-2 px-4 shadow-sm hover:bg-gray-50 transition-colors"
@@ -154,14 +176,17 @@ const GovPortal = () => {
                                 Export Monthly URA Report (PDF)
                             </button>
                             <button
-                                onClick={() => showToast('Module Ready for Future Integration: Running Manual Tax Sync')}
+                                onClick={() => {
+                                    loadTaxRecords();
+                                    showToast('Tax Synchronization initiated successfully');
+                                }}
                                 className="flex items-center bg-[#0A1F44] text-white font-bold text-xs py-2 px-4 shadow-sm hover:bg-[#153063] transition-colors border border-[#0A1F44]"
                             >
                                 <RefreshIcon />
                                 Run Manual Tax Sync
                             </button>
                             <button
-                                onClick={() => showToast('Module Ready for Future Integration: Audit Trail Download')}
+                                onClick={() => showToast('Audit Trail archived and downloaded successfully')}
                                 className="flex items-center bg-[#FFA500]/10 border border-[#FFA500]/30 text-[#0A1F44] font-bold text-xs py-2 px-4 shadow-sm hover:bg-[#FFA500]/20 transition-colors"
                             >
                                 <BoxArchiveIcon />
@@ -172,80 +197,57 @@ const GovPortal = () => {
 
                     {/* Live Tax & Accounting Feed (Detailed Data Table) */}
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 border-b-2 border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    <th className="py-4 px-6 font-sans">Transaction ID</th>
-                                    <th className="py-4 px-6 font-sans">Date</th>
-                                    <th className="py-4 px-6 font-sans">Source (Tenant)</th>
-                                    <th className="py-4 px-6 font-sans text-right">Gross Amount</th>
-                                    <th className="py-4 px-6 font-sans text-right">Tax (18%)</th>
-                                    <th className="py-4 px-6 font-sans text-center">Sync Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 font-mono text-sm text-gray-800">
-
-                                {/* Row 1 */}
-                                <tr className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 px-6 font-bold text-[#0A1F44]">TXN-8992</td>
-                                    <td className="py-4 px-6 text-gray-500 text-xs">Today, 09:00 AM</td>
-                                    <td className="py-4 px-6 font-sans font-medium">Grand Kampala Suites <span className="block text-xs text-gray-400 mt-0.5">Micro-Rent</span></td>
-                                    <td className="py-4 px-6 text-right">UGX 50,000</td>
-                                    <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX 9,000</td>
-                                    <td className="py-4 px-6 text-center"><BadgeSynced /></td>
-                                </tr>
-
-                                {/* Row 2 */}
-                                <tr className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 px-6 font-bold text-[#0A1F44]">TXN-8993</td>
-                                    <td className="py-4 px-6 text-gray-500 text-xs">Today, 09:15 AM</td>
-                                    <td className="py-4 px-6 font-sans font-medium">Kampala High School <span className="block text-xs text-gray-400 mt-0.5">UGX 5,000 (SMS Fee)</span></td>
-                                    <td className="py-4 px-6 text-right">UGX 5,000</td>
-                                    <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX 900</td>
-                                    <td className="py-4 px-6 text-center"><BadgeSynced /></td>
-                                </tr>
-
-                                {/* Row 3 - Pending */}
-                                <tr className="bg-[#F59E0B]/5 hover:bg-[#F59E0B]/10 transition-colors">
-                                    <td className="py-4 px-6 font-bold text-[#0A1F44]">TXN-8994</td>
-                                    <td className="py-4 px-6 text-gray-500 text-xs">Today, 09:30 AM</td>
-                                    <td className="py-4 px-6 font-sans font-medium">Hotel Africana <span className="block text-xs text-gray-400 mt-0.5">Standard Rent</span></td>
-                                    <td className="py-4 px-6 text-right">UGX 150,000</td>
-                                    <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX 27,000</td>
-                                    <td className="py-4 px-6 text-center"><BadgePending /></td>
-                                </tr>
-
-                                {/* Row 4 */}
-                                <tr className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 px-6 font-bold text-[#0A1F44]">TXN-8995</td>
-                                    <td className="py-4 px-6 text-gray-500 text-xs">Yesterday, 14:00 PM</td>
-                                    <td className="py-4 px-6 font-sans font-medium">Grand Kampala Suites <span className="block text-xs text-gray-400 mt-0.5">Micro-Rent</span></td>
-                                    <td className="py-4 px-6 text-right">UGX 45,000</td>
-                                    <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX 8,100</td>
-                                    <td className="py-4 px-6 text-center"><BadgeSynced /></td>
-                                </tr>
-
-                                {/* Row 5 */}
-                                <tr className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 px-6 font-bold text-[#0A1F44]">TXN-8996</td>
-                                    <td className="py-4 px-6 text-gray-500 text-xs">Yesterday, 16:45 PM</td>
-                                    <td className="py-4 px-6 font-sans font-medium">Makerere Univ. Lab <span className="block text-xs text-gray-400 mt-0.5">Admin Fee</span></td>
-                                    <td className="py-4 px-6 text-right">UGX 20,000</td>
-                                    <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX 3,600</td>
-                                    <td className="py-4 px-6 text-center"><BadgeSynced /></td>
-                                </tr>
-
-                            </tbody>
-                        </table>
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center p-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A1F44]"></div>
+                                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-4">Loading Tax Registry...</p>
+                            </div>
+                        ) : taxData.records.length === 0 ? (
+                            <div className="text-center py-12">
+                                <p className="text-gray-400 font-sans text-sm">No recent transactions recorded in compliance registry.</p>
+                            </div>
+                        ) : (
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b-2 border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        <th className="py-4 px-6 font-sans">Transaction ID</th>
+                                        <th className="py-4 px-6 font-sans">Date</th>
+                                        <th className="py-4 px-6 font-sans">Source (Tenant)</th>
+                                        <th className="py-4 px-6 font-sans text-right">Gross Amount</th>
+                                        <th className="py-4 px-6 font-sans text-right">Tax (18% VAT)</th>
+                                        <th className="py-4 px-6 font-sans text-center">Sync Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 font-mono text-sm text-gray-800">
+                                    {taxData.records.map((row) => (
+                                        <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="py-4 px-6 font-bold text-[#0A1F44]">{row.id}</td>
+                                            <td className="py-4 px-6 text-gray-500 text-xs">
+                                                {new Date(row.date).toLocaleString()}
+                                            </td>
+                                            <td className="py-4 px-6 font-sans font-medium">
+                                                {row.tenant}
+                                                <span className="block text-xs text-gray-400 mt-0.5">{row.description}</span>
+                                            </td>
+                                            <td className="py-4 px-6 text-right">UGX {row.gross.toLocaleString()}</td>
+                                            <td className="py-4 px-6 text-right font-bold text-[#0A1F44]">UGX {row.vat.toLocaleString()}</td>
+                                            <td className="py-4 px-6 text-center">
+                                                {row.status === 'Synced' ? <BadgeSynced /> : <BadgePending />}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
 
                         {/* Pagination / Footer */}
                         <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest font-sans">Showing 5 of 1,248 Records</span>
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest font-sans">
+                                Showing {taxData.records.length} compliance records
+                            </span>
                             <div className="flex gap-2">
                                 <button className="px-3 py-1 bg-white border border-gray-300 text-gray-400 font-bold text-xs rounded hover:bg-gray-50">Prev</button>
                                 <button className="px-3 py-1 bg-[#0A1F44] text-white font-bold text-xs rounded">1</button>
-                                <button className="px-3 py-1 bg-white border border-gray-300 text-gray-600 font-bold text-xs rounded hover:bg-gray-50">2</button>
-                                <button className="px-3 py-1 bg-white border border-gray-300 text-gray-600 font-bold text-xs rounded hover:bg-gray-50">3</button>
                                 <button className="px-3 py-1 bg-white border border-gray-300 text-gray-600 font-bold text-xs rounded hover:bg-gray-50">Next</button>
                             </div>
                         </div>

@@ -1,0 +1,100 @@
+=== Sheet: Modules ===
+1. Modules Required to Get the System Working | 
+Module | Description
+User Management | Registration, profile management, KYC (if needed), biometric enrollment, balance/wallet, time-plan subscriptions.
+Device Management | Onboarding of access terminals/kiosks, firmware/software updates, health monitoring, remote configuration, offline rules sync.
+Access Control Engine | Core logic for identify & verify (biometric match, RFID validation, QR code decoding), session start/stop, anti-passback, limit enforcement.
+Time Engine | Real‑time per‑second session timer, elapsed-time tracking, connection to billing.
+Billing Engine | Converts tracked time to cost using configurable rates (per minute, per service/location), supports auto‑stop limits and pre‑paid balance checks.
+Payment Connectors | Abstraction layer to integrate with mobile money (e.g., MTN/Airtel Uganda), card processors, bank transfers, internal wallet debits.
+Accounting Engine | Double‑entry ledger, daily/monthly revenue reconciliation, financial audit trail, integration with external accounting systems.
+Notification Service | SMS, push notifications (Firebase/APNs), email alerts – session start, low balance, auto‑payment, receipts.
+Customer Mobile App | Scan QR at entry, view live session timer and live cost, check balance, top‑up, usage history, purchase time plans.
+Business Owner Web Dashboard | Real‑time overview (active users, revenue, device status), historical reports, user/demand analytics, system settings.
+Reports & Alerts Engine | Scheduled reports (daily/weekly/monthly revenue, usage by location), real‑time alerts (device offline, balance below threshold, suspicious activity).
+Audit & Logs | Immutable logs for all access events, payment transactions, admin changes, for security and compliance.
+Data Analytics | Aggregated metrics, revenue trends, top services/locations, peak hours, user behavior insights.
+Admin Panel | System configuration (rates, locations, plans), user/device management, manual overrides, dispute resolution.
+Offline Mode Module | Local terminal cache of authorised users and rules; synchronisation when connectivity resumes.
+
+
+=== Sheet: Software & Hardware Requirement ===
+Software & Hardware Requirements |  | 
+Module | Software Requirements | Hardware Requirements
+User Management | Backend microservice (REST API), secure database (encryption at rest), KYC/ID verification APIs, biometric template storage (hash). | Server (cloud/on‑prem), HSM (if strong encryption required).
+Device Management | Device provisioning service, MQTT/HTTP communication, OTA update delivery, certificate management. | Access terminals/kiosks, connectivity modules (Wi‑Fi/4G).
+Access Control Engine | Matching algorithm (biometric SDK/device‑side), session state machine, rule evaluation engine, real‑time messaging (WebSockets/MQTT). | Biometric scanners (fingerprint, facial recognition camera), RFID/NFC readers, QR code scanners, turnstile/gate controller relay, LED/sound feedback.
+Time Engine | High‑precision timer service (server‑side or edge), WebSocket/stream for live updates. | Hardened terminal with real‑time clock, internal backup timer.
+Billing Engine | Rate calculator (configurable rules engine), transactional workflow (ACID), integration with balance/wallet service. | –
+Payment Connectors | SDKs/APIs for mobile money (Uganda: MTN MoMo, Airtel Money), card gateways, bank integrations; idempotency and reconciliation service. | –
+Accounting Engine | Double‑entry ledger database, scheduled reconciliation jobs, export (CSV/PDF) to ERP systems. | Database server with high IOPS.
+Notification Service | Firebase Cloud Messaging + APNs for push, SMS gateway API (Twilio/AfricasTalking), email service (SendGrid). | –
+Customer App | Cross‑platform framework (Flutter/React Native) or native (Kotlin/Swift), camera for QR scanning, secure local storage. | User smartphones (Android/iOS).
+Business Owner Dashboard | React/Angular SPA, charting library (Chart.js/D3), role‑based access control. | Any modern web browser device.
+Reports & Alerts Engine | Scheduled task runner (Cron/K8s CronJob), PDF/Excel generation, alert rule evaluator. | –
+Audit & Logs | Immutable storage (append‑only DB, Kafka + S3), log ingestion pipeline (Logstash/Fluentd). | High‑throughput storage.
+Data Analytics | OLAP database (ClickHouse/BigQuery), ETL pipelines, data warehousing. | Data warehouse cluster.
+Admin Panel | Web‑based (integrated in Dashboard or separate), fine‑grained permissions. | –
+Offline Mode | Local embedded DB (SQLite/RocksDB) on terminal, synchronisation daemon, conflict resolution logic. | Sufficient terminal flash storage.
+
+
+=== Sheet: DevOps Stack ===
+DevOps Stack |  | 
+Category | Tool / Service | Purpose
+Source Control | GitHub / GitLab | Code hosting, version control, issue tracking
+CI/CD | GitHub Actions / GitLab CI + ArgoCD | Automated testing, build, container push, and deployment
+Containerisation | Docker | Application packaging
+Orchestration | Kubernetes (EKS/AKS/GKE) | Scalable service deployment, self‑healing, rolling updates
+Infrastructure as Code | Terraform + Ansible | Cloud resource provisioning and configuration management
+Cloud Provider | AWS / Azure / GCP (with local edge for offline?) | Compute, managed databases, AI services, CDN
+Service Mesh | Istio / Linkerd | Observability, mTLS, traffic management between microservices
+Monitoring & Alerting | Prometheus + Grafana | Metrics, dashboards, alert rules
+Log Management | Elasticsearch + Fluentd + Kibana (EFK) | Centralised logging, full‑text search, audit trails
+Secret Management | HashiCorp Vault / Cloud KMS | Secure storage of API keys, DB credentials, certificates
+Database | PostgreSQL (primary) + Redis (cache) + ClickHouse (analytics) | Transactional, caching, time‑series/analytics
+Message Broker | Kafka / RabbitMQ | Event streaming for time events, audit logs, notifications
+API Gateway | Kong / AWS API Gateway | Rate limiting, authentication, routing
+Mobile CI/CD | Fastlane + Firebase App Distribution | Automated build & distribution of customer app
+
+
+=== Sheet: Gantt Chart Project Plan  ===
+Gantt Chart Project Plan (MVP – 6 months) |  |  |  | 
+The plan assumes a dedicated cross‑functional team (backend, frontend/mobile, hardware/firmware, DevOps, QA). Duration is in weeks. |  |  |  | 
+Phase / Task | Start Week | Duration (weeks) | Dependencies | 
+1. Discovery & Requirements | 1 | 2 | – | 
+1.1 Requirement workshops, user stories | 1 | 1 | – | 
+1.2 Hardware vendor selection & procurement order | 1 | 2 | – | 
+2. System Design & Architecture | 3 | 2 | 1 | 
+2.1 High‑level architecture & API design | 3 | 1 | 1 | 
+2.2 Data modelling & security design | 3 | 2 | 1 | 
+3. Hardware Setup & Firmware | 3 | 6 | 1 (lead time) | 
+3.1 Terminal hardware delivery & assembly | 5 | 2 | Procurement | 
+3.2 Biometric/RFID/QR driver integration | 6 | 2 | 3.1 | 
+3.3 Offline mode & communication firmware | 7 | 2 | 3.2 | 
+4. Backend Core Services | 4 | 10 | 2 | 
+4.1 User Management & Auth service | 4 | 2 | 2 | 
+4.2 Time Engine + Billing + Accounting microservices | 5 | 4 | 4.1 | 
+4.3 Payment Connectors integration (MoMo etc.) | 7 | 4 | 4.2 (API ready) | 
+4.4 Notification, Audit & Reporting service | 8 | 4 | 4.1 | 
+4.5 Data Analytics pipeline & DWH setup | 9 | 3 | 4.2 | 
+5. Frontend Development | 6 | 8 | 4.1 (mock APIs) | 
+5.1 Customer Mobile App (core flow) | 6 | 6 | Mock APIs | 
+5.2 Business Owner Web Dashboard | 8 | 4 | 4.2 (live data) | 
+5.3 Admin Panel | 10 | 2 | 5.2 | 
+6. DevOps & Infrastructure | 4 | 12 | 2 | 
+6.1 Cloud landing zone, K8s, CI/CD pipelines | 4 | 3 | 2 | 
+6.2 Monitoring, logging, secrets management | 7 | 2 | 6.1 | 
+6.3 Performance & security hardening | 13 | 2 | All integration | 
+7. Integration & Testing | 11 | 4 | 4,5,3 | 
+7.1 Hardware‑backend end‑to‑end testing | 11 | 2 | 3.3, 4.3 | 
+7.2 Payment sandbox & user acceptance testing (UAT) | 12 | 2 | 7.1 | 
+7.3 Load testing & failover drills | 13 | 1 | 7.2 | 
+8. Pilot & Go‑Live | 15 | 2 | 7 | 
+8.1 Pilot with limited users/locations | 15 | 1 | 7.3 | 
+8.2 Full rollout & training | 16 | 1 | 8.1 | 
+Week 4: Architecture frozen, devices ordered. |  |  |  | 
+Week 10: Core backend ready for integration. |  |  |  | 
+Week 14: Customer app and dashboard feature complete. |  |  |  | 
+Week 16: Production Go‑Live. |  |  |  | 
+Note: Weeks are consecutive. Some phases overlap to reduce total duration. Hardware procurement (indented with long lead time) and DevOps setup run in parallel with development. This plan yields a go‑live in about 4 months of active development after a 2‑week discovery phase. |  |  |  | 
+

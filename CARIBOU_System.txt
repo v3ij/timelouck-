@@ -1,0 +1,328 @@
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+Contents
+1.0 Introduction .......................................................................................................................................... 2
+1.2 General Description .............................................................................................................................. 3
+2.0 Scope ..................................................................................................................................................... 3
+2.1 Products for Development/production.............................................................................................. 3
+2.1.1 Inclusions ......................................................................................................................................... 3
+2.2 Functional Requirements..................................................................................................................... 4
+b) Master enrollment Database............................................................................................................. 4
+2.3 Pattern Matching .............................................................................................................................. 5
+2.4 RFID Card Reader Issuance and verification .................................................................................... 6
+2.5 Interface Requirements ........................................................................................................................ 7
+2.6 Performance Requirements ................................................................................................................. 7
+3.0 Non-Functional Attributes .................................................................................................................. 8
+3.1 Inter-operability requirements ........................................................................................................ 8
+3.2 Security requirements ...................................................................................................................... 8
+3.3 Availability Requirements ............................................................................................................... 8
+3.4 Portability requirements .................................................................................................................. 9
+4.0 System Environment ............................................................................................................................ 9
+4.1 Modules ............................................................................................................................................... 10
+5.0 Conclusion .......................................................................................................................................... 10
+
+-- 1 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+1.0 Introduction
+This requirements specification document has been assembled to guide the
+software development process to customize the user needs required to activate
+the hardware as will be later explained later on. This specification outlines, a
+comprehensive requirements to be followed by the developer to ensure the
+product meets users’ needs, it needs to be understood, captured, and agreed
+upon before engagement of the software developer.
+The specification covers features of physical human identification such as
+fingerprints and facials. It does not include retina/iris scans, palmprint, PIN etc
+… but this could be considered for its futuristic enhancement. Other methods
+of identification include radio wave authentication (RFID) tagging. This
+specification covers the physical requirements from the time of object enrolment
+and the commissioning stage and this has been done to cater for consensus and
+agreement between the developer and the client, help in making proper
+estimates, guide planning and lessen the rework of requirements.
+1.1 Definitions
+Biometrics The quantifiable data or metrics based on human
+characteristics or traits.
+Biometric
+Identification
+A form of identification and access control using
+biometrics and a computer device, in this case facial
+or fingerprints.
+Fingerprint
+verification
+Customer finger matching to the unique marks of their
+fingerprint.
+Facial recognition Analyzes the overall facial structure, including
+measurements of distances between eyes, nose,
+mouth, and jaw edges.
+Customer or user An account holder with KARIBOU biometric security
+locking system
+Master enrollment
+database
+The data storage table for KARIBOU biometric
+security locking system captured fingerprint and facial
+data
+PIN Personal Identification Number
+
+-- 2 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+1.2 General Description
+This document has been assembled to assist in the development of KARIBOU
+system is a security locking system. This security system can be applied in different
+environments, specifically considering facial recognition, fingerprint recognition
+and RFID tagging of user details, based on xxxxxx hardware, which originates
+from Peoples Republic of China.
+The developer thus will be guided by this specification to customize the hardware
+to the requirements as specified in this document. The developer is supposed to
+deliver functional tests at the end of each module, for adaptation and
+customization in different application areas, as already mentioned and to be
+more specific;
+ Facial capture and recognition
+ fingerprint capture and verification
+ RFID (radio frequency identification) using cards
+2.0 Scope
+The scope of KARIBOU biometric security locking system shall cover the three
+bullets as described in 1.2 above.
+2.1 Products for Development/production
+The product to be developed include the KARIBOU Biometric security locking
+system and an associated central database for storage of enrollment samples and
+an RFID registry for user tagging and association with other financial systems.
+2.1.1 Inclusions
+KARIBOU biometric security locking system will allow users to:
+ Use their proximity cards (smart keys) to gain physical access
+ Use their proximity cards to login to financial accounting systems
+ Use the image processing terminal to gain access
+KARIBOU database shall keep a biometric profile of all enrolled users for
+comparison during access requests, by the biometric verified user or RFID card
+holder.
+
+-- 3 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+2.2 Functional Requirements
+a) Requirements for Enrollment on the KARIBOU biometric security locking
+system
+During the enrolment process the biometric machine shall capture the biometric
+raw data of a user and extract the biometric feature to work with, in this
+particular case the personal fingerprint and facial biometrics. The device should
+be able to capture all 10 samples from the 10 human digits. These datasets will
+then be combined with the identity information of the user (user personal data)
+and stored as a biometric template in a master database.
+b) Master enrollment Database
+KARIBOU biometric security locking system will use a master enrollment
+database to store profiles of enrolled users. A user’s profile will be stored in a
+database for account access verification, upon user input.
+Considerations for the database are as follows:
+ Shall store profiles in an independent Database Server (for [1]facial and
+[2]fingerprint )
+ Shall provide failsafe backup database server mechanism for the
+independent databases.
+Context diagram for the KARIBOU biometric security locking system
+
+-- 4 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+2.3 Pattern Matching
+During the verification process the user shall provide his/her identity and
+biometric characteristic to the biometric terminal/device. The device shall then
+retrieve the biometric template associated with the identity from the database,
+perform a pattern matching with the biometric feature extracted from the
+captured biometric characteristic of the user to generate the similarity between
+the two data, and shall determine whether user is accepted or rejected based on
+the similarity (or master threshold value). At the enrolment terminal the
+enrollment function should be strictly manned by system administrator with a
+personalize account on the system, to authentically enroll users based on the
+agreed upon access control list. The entire biometric system shall protect data of
+users as per the data protection law of Uganda to rule out any un-authorized
+usage and access. This data shall only be used for purposes of authentication and
+accounting on the biometric system.
+A secondary administrator account may be handy in order to provide user
+support and perform enrollment functions on the system.
+The verification may be by any of the 2 (facial or fingerprint) or as may be
+otherwise specified by the client.
+Depending on the ease of data storage, the system may allow enrollment with 1
+or 2 fingerprints out of the 10 separately rolled fingers.
+
+-- 5 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+The signal processing system should be able to capture the subverting biometric
+functionalities to rule out enrollment of non-human objects into the biometric
+system. The process of enrollment should be coherent, from capture, quality
+control (tell humans and other objects apart), attribution referencing and store
+samples in the master database. The verification will follow a process of
+presentation at the terminal, capture data, quality control-checks, pattern
+matching and finally grant/deny access.
+This is illustrated in the figure below:
+2.4 RFID Card Reader Issuance and verification
+KARIBOU biometric security locking system shall require use of a proximity card
+reader to:
+ Grant physical access permissions
+ Grant access to financial accounting systems as may be described
+ perform accounting functions to (verified) legitimate individuals /users
+ perform any other logging function such as attendance to duty/work
+
+-- 6 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+The proximity card issuance shall be done using the system administration panel,
+by authorized administrator and the user attributes shall be imported from the
+master enrollment database.
+Depending on intended use cases, the developer will choose between low, high
+or ultra-high frequency RFID readers, and further decisions regarding additional
+features including remote access, time-based automation and the use of
+alternative credentials such as keypad codes may be earmarked for future
+enhancement. KARIBOU shall therefore be able to integrate with financial
+accounting software and payment gateways such mobile money payway among
+others.
+These options shall be carefully considered, make RFID door locks to be easily
+integrated with existing security features and dedicated security protocols built
+around the use of RFID access control to ensure the reliable and efficient use of
+RFID technology.
+2.5 Interface Requirements
+Interface specifications for KARIBOU biometric security locking system require
+that the enrollment unit, the system at large and all related intra-sub-systems will
+satisfy the following requirements:
+1. shall be visually appealing
+2. shall be quick/responsive
+3. shall be consistent (works in the way user expect it to work)
+4. be easy to use (navigate)
+5. able to provide a 2-way feedback
+The system should put user satisfaction in mind so that all targeted categories of
+users find it easy to interface with.
+2.6 Performance Requirements
+Performance is a key non-functional requirement for KARIBOU biometric
+security locking system which defines high quality specifications for security
+systems. KARIBOU biometric security locking system will require the following:
+ Interoperable with other similar systems (should not be an isolated system)
+
+-- 7 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+ Perform security locking/access with utmost accuracy
+ Provide logging/performance or other financials with virtually no
+minimally errors
+ Highly responsive in real-time
+ Be able to administer profiles, session management and error handling
+mechanism.
+3.0 Non-Functional Attributes
+3.1 Inter-operability requirements
+KARIBOU biometric security locking system shall require that the hardware and
+software as specified in this document be inter –operable as wide as possible to
+support cross-vendor and cross-agency (future user clients) authentication. This
+will widen the usage scope.
+KARIBOU biometric security locking system should thus provide low error rate
+tests in terms of interoperability, increase assurance of low operational error rates
+in wider usage environments.
+3.2 Security requirements
+Security considerations are important while we need to make KARIBOU
+biometric security locking system stand out, consequently, evaluations of
+accuracy of the system in terms of verification (1:1) and identification (1:N) of
+information in the master database, should be swiftly achieved by the
+developer.
+Other considerations should take into account the fact underlying the reliability
+of the system. Apart from the ability to compare biometrics, the legitimacy of
+data should be emphasized and thus:
+1. The system shall eliminate possibilities of impersonation during enrollment
+2. Minimize passive or active presentation attacks (anti spoofing)
+3.3 Availability Requirements
+The system should be available to all active users (legitimate) at all times. Caribou
+biometric security locking system should support and conform to high availability
+deployment requirements. For example, if the server goes offline, a logged in
+
+-- 8 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+user may remain functional because of the cached data. The system server too
+shall be hosted and highly available to process requests. The developer is
+therefore advised to:
+ Ensure uptime of 99.9 percent to legitimate users
+ Ensure a reliable backup and replication system for seamless changeover in
+case of server failure
+ Ensure enough resources are available even at peak hours the system is
+available and performs to expectations (optimal throughput)
+3.4 Portability requirements
+The developer is assumed to take advantage of different computing platforms
+and thus use the sdk that supports replication within and across environments
+and enabling users to port it in different operating environments. KARIBOU sdk
+support shall provide full portability and be easy for the developer and
+maintenance team to run and easier to build on top of it facilitate future
+extensibility (adaptive maintenance).
+4.0 System Environment
+ KARIBOU biometric security locking system shall be operated in a Linux
+environment or windows environment, but preferably in a windows
+environment.
+ The (hardware) computers/laptops must have x86 or x64 bit compatible
+processors.
+ Microsoft Windows 10 or 11 operating systems and not any older high risk
+OSs (operating systems)
+ Full hardware support for Android operating environment
+ A fingerprint reader that is supported by Free Fingerprint Verification SDK
+ Microsoft .NET framework 4.5 (for .NET components)
+ Development environment shall be supported by Microsoft Visual Studio
+.NET, Java SE JDK 8 or better/newer
+ There must be a client server environment for easy centralized
+management
+
+-- 9 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+ Server(s) must run a seamless backup and restore system to ensure optimal
+uptime, in the event of one server failing
+ Software must adequately support hardware and all its functions.
+ Historical activity logs must be accessible and comprehensible enough
+ Software will monitor for suspicious activity on presentation of biometrics
+at enrollment and verification.
+ When the KARIBOU system server is not available, new user sign-up and
+updates on profiles should not be available for integrity checks.
+4.1 Modules
+The implementation of the system shall have the following deliverables:
+Module 1
+Fingerprint design development back end integration and testing
+ Sdk identification and requirements fusing functional Interface and
+database design and data normalization for different datatypes including
+object metadata
+Module 2
+Facial interface design data integration (data types metadata), development and
+testing
+ Logical security requirements
+Module 3
+Design and Integration with the proximity RFID cards, financial accounting
+systems and legal requirements identification
+ Performance of full system tests, user acceptance tests in a client server
+setting ….
+ Operation and maintenance
+5.0 Conclusion
+At the end of the user acceptance testing, the developer shall handover a system
+user manual detailing the entire physical operation of the KARIBOU biometric
+
+-- 10 of 11 --
+
+KARIBOU Biometric security locking system
+System Requirements Specification	
+v1.0
+security locking system. The developer shall also pass-over the associated
+enhancement code of the sdk and associated administrative keys to the client,
+this will be property of the client.
+
+-- 11 of 11 --
+
