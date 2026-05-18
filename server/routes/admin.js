@@ -382,6 +382,26 @@ router.get('/devices', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/devices
+ * Register a new lock/terminal device
+ */
+router.post('/devices', async (req, res) => {
+    const { name, mac_address, tenant_id } = req.body;
+    if (!name || !mac_address) return res.status(400).json({ status: 'error', message: 'Name and MAC Address/Serial Number required.' });
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO devices (device_name, mac_address, is_online, tenant_id) VALUES ($1, $2, false, $3) RETURNING *',
+            [name, mac_address, tenant_id || null]
+        );
+        res.status(201).json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        console.error('Create device error:', err);
+        res.status(500).json({ status: 'error', message: 'Failed to register device.' });
+    }
+});
+
+/**
  * GET /api/admin/tenant/:tenantId/users
  * Fetches all users (students or guests) registered under a specific tenant from the database.
  */

@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
-import { Cpu, Wifi, WifiOff, MapPin, RefreshCcw, KeyRound, ShieldAlert, CheckCircle2, Activity, Battery, Terminal } from 'lucide-react';
-import { fetchDevices, triggerRemoteOverride } from '../../services/api';
+import { Cpu, Wifi, WifiOff, MapPin, RefreshCcw, KeyRound, ShieldAlert, CheckCircle2, Activity, Battery, Terminal, PlusCircle } from 'lucide-react';
+import { fetchDevices, triggerRemoteOverride, createDevice, fetchAdminTenants } from '../../services/api';
 import { showToast } from '../../components/GlobalToast';
 
 const Hardware = () => {
     const [devices, setDevices] = useState([]);
+    const [tenants, setTenants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isPinging, setIsPinging] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState('');
     const [overrideReason, setOverrideReason] = useState('');
     const [isSubmittingOverride, setIsSubmittingOverride] = useState(false);
     const [overrideStatus, setOverrideStatus] = useState(null);
+
+    // New device state
+    const [newDeviceName, setNewDeviceName] = useState('');
+    const [newDeviceMac, setNewDeviceMac] = useState('');
+    const [newDeviceTenant, setNewDeviceTenant] = useState('');
+    const [isCreatingDevice, setIsCreatingDevice] = useState(false);
 
     const loadDevices = async () => {
         setIsLoading(true);
@@ -27,8 +34,16 @@ const Hardware = () => {
         setIsLoading(false);
     };
 
+    const loadTenants = async () => {
+        const res = await fetchAdminTenants();
+        if (res && res.status === 'success') {
+            setTenants(res.data);
+        }
+    };
+
     useEffect(() => {
         loadDevices();
+        loadTenants();
     }, []);
 
     const handlePing = () => {
@@ -78,6 +93,34 @@ const Hardware = () => {
             showToast('Connection failed.');
         } finally {
             setIsSubmittingOverride(false);
+        }
+    };
+
+    const handleCreateDevice = async (e) => {
+        e.preventDefault();
+        if (!newDeviceName || !newDeviceMac) {
+            showToast('Please fill in Name and SN/MAC.');
+            return;
+        }
+
+        setIsCreatingDevice(true);
+        showToast('Registering new IoT hardware fleet node...');
+
+        try {
+            const res = await createDevice(newDeviceName, newDeviceMac, newDeviceTenant);
+            if (res.status === 'success') {
+                showToast(`Success! Device registered: ${newDeviceName}`);
+                setNewDeviceName('');
+                setNewDeviceMac('');
+                setNewDeviceTenant('');
+                loadDevices();
+            } else {
+                showToast(res.message || 'Failed to register device.');
+            }
+        } catch (err) {
+            showToast('Connection error during hardware registration.');
+        } finally {
+            setIsCreatingDevice(false);
         }
     };
 
@@ -209,8 +252,86 @@ const Hardware = () => {
                     )}
                 </div>
 
-                {/* Secure Override Control Panel */}
-                <div className="space-y-6">
+                {/* Secure Override & Device Registration Panels */}
+                <div className="space-y-8">
+                    {/* Register IoT Lock Node Panel */}
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold text-[#0A1F44] flex items-center gap-2">
+                            <PlusCircle size={22} className="text-blue-600" />
+                            Register IoT Lock Node
+                        </h2>
+
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden">
+                            <div className="mb-6">
+                                <span className="inline-block text-[10px] font-bold text-blue-600 bg-blue-50 uppercase tracking-widest px-3 py-1 rounded-full mb-2">
+                                    Hardware Provisioning
+                                </span>
+                                <p className="text-xs text-gray-500">
+                                    Add physical or simulated smart locks and biometrics terminals to the database using their unique Serial Number (MAC Address).
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleCreateDevice} className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+                                        Device Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newDeviceName}
+                                        onChange={(e) => setNewDeviceName(e.target.value)}
+                                        placeholder="e.g. Lobby Entrance Lock"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+                                        Hardware Serial Number / MAC Address
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newDeviceMac}
+                                        onChange={(e) => setNewDeviceMac(e.target.value)}
+                                        placeholder="e.g. SN: TL90-84920X or MAC Address"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono font-bold"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+                                        Assign to Tenant Phase (Optional)
+                                    </label>
+                                    <select
+                                        value={newDeviceTenant}
+                                        onChange={(e) => setNewDeviceTenant(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                                    >
+                                        <option value="">System Platform (Unassigned)</option>
+                                        {tenants.map(t => (
+                                            <option key={t.id} value={t.id}>
+                                                {t.name} ({t.type})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isCreatingDevice}
+                                    className="w-full py-3.5 bg-[#0A1F44] text-white rounded-xl text-xs font-bold hover:bg-blue-900 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                                >
+                                    <PlusCircle size={16} />
+                                    {isCreatingDevice ? 'Registering...' : 'Register IoT Node'}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Secure Override Control Panel */}
+                    <div className="space-y-6">
                     <h2 className="text-xl font-bold text-[#0A1F44] flex items-center gap-2">
                         <KeyRound size={22} className="text-blue-600" />
                         Remote Override Control
@@ -307,9 +428,9 @@ const Hardware = () => {
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
+    </div>
     );
 };
 

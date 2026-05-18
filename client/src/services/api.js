@@ -263,3 +263,17 @@ export const fetchTenantNotifications = async (tenantId) => {
         return null;
     }
 };
+
+export const createDevice = async (name, macAddress, tenantId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/devices`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, mac_address: macAddress, tenant_id: tenantId ? parseInt(tenantId) : null }),
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating device:', error);
+        return { status: 'error', message: 'Failed to create device.' };
+    }
+};
